@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>환자 데이터베이스 — 경희토정한의원 목소리 클리닉</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --teal: #1D9E75;
+  --teal-light: #E1F5EE;
+  --teal-dark: #0F6E56;
+  --teal-mid: #5DCAA5;
+  --amber: #BA7517;
+  --amber-light: #FAEEDA;
+  --red: #E24B4A;
+  --red-light: #FCEBEB;
+  --bg: #F3F2ED;
+  --surface: #FFFFFF;
+  --border: #E5E3DC;
+  --gray-0: #FAFAF8;
+  --gray-1: #F3F2ED;
+  --gray-2: #E5E3DC;
+  --gray-3: #C8C6BE;
+  --gray-4: #888780;
+  --gray-5: #444441;
+  --gray-6: #1A1A18;
+  --sidebar: #111110;
+  --font: 'Noto Sans KR', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --r: 12px;
+  --r-sm: 8px;
+  --shadow: 0 1px 8px rgba(0,0,0,.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body { font-family: var(--font); background: var(--bg); color: var(--gray-6); min-height: 100vh; }
+
+/* ── Layout ── */
+.shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 230px; flex-shrink: 0;
+  background: var(--sidebar);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; height: 100vh;
+  z-index: 100; overflow-y: auto;
+}
+.logo-area {
+  padding: 1.5rem 1.25rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.logo-mark {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--teal); display: flex; align-items: center; justify-content: center;
+  margin-bottom: .75rem;
+}
+.logo-mark svg { width: 22px; height: 22px; }
+.logo-title { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
+.logo-sub { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 3px; line-height: 1.5; }
+
+.nav-group { padding: .75rem 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.nav-label {
+  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(255,255,255,.25); padding: .5rem 1.25rem .3rem; font-weight: 500;
+}
+.nav-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: .6rem 1.25rem;
+  font-size: 13px; font-weight: 400; color: rgba(255,255,255,.5);
+  background: none; border: none; cursor: pointer; font-family: var(--font);
+  text-align: left; transition: all .15s;
+  border-left: 2px solid transparent;
+}
+.nav-btn:hover { color: rgba(255,255,255,.85); background: rgba(255,255,255,.04); }
+.nav-btn.active { color: var(--teal-mid); border-left-color: var(--teal-mid); background: rgba(93,202,165,.07); font-weight: 500; }
+.nav-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+.sidebar-footer {
+  margin-top: auto; padding: 1rem 1.25rem;
+  font-size: 10px; color: rgba(255,255,255,.2); line-height: 1.7;
+}
+.voicecheck-link {
+  display: flex; align-items: center; gap: 8px;
+  padding: .6rem 1.25rem; font-size: 12px; color: var(--teal-mid);
+  font-weight: 500; cursor: pointer; text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all .15s;
+}
+.voicecheck-link:hover { background: rgba(93,202,165,.07); }
+
+.main { margin-left: 230px; padding: 2rem; min-height: 100vh; max-width: 1200px; }
+
+/* ── Pages ── */
+.page { display: none; }
+.page.active { display: block; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.page-hdr { margin-bottom: 1.75rem; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.page-hdr-left h2 { font-size: 22px; font-weight: 700; color: var(--gray-6); letter-spacing: -.03em; }
+.page-hdr-left p { font-size: 13px; color: var(--gray-4); margin-top: 4px; }
+
+/* ── Stats row ── */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow);
+}
+.stat-label { font-size: 11px; color: var(--gray-4); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.stat-val { font-family: var(--mono); font-size: 28px; font-weight: 500; color: var(--gray-6); }
+.stat-sub { font-size: 11px; color: var(--gray-4); margin-top: 3px; }
+.stat-card.accent { background: var(--teal-dark); border-color: var(--teal-dark); }
+.stat-card.accent .stat-label { color: rgba(255,255,255,.6); }
+.stat-card.accent .stat-val { color: #fff; }
+.stat-card.accent .stat-sub { color: rgba(255,255,255,.5); }
+
+/* ── Card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 1.25rem;
+  box-shadow: var(--shadow); margin-bottom: 1rem;
+}
+.card-title {
+  font-size: 11px; font-weight: 500; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--gray-4); margin-bottom: 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* ── Patient list ── */
+.patient-list { display: flex; flex-direction: column; gap: 0; }
+.patient-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 0; border-bottom: 1px solid var(--bg);
+  cursor: pointer; transition: background .1s;
+  border-radius: var(--r-sm);
+}
+.patient-row:last-child { border-bottom: none; }
+.patient-row:hover { background: var(--bg); padding-left: 8px; }
+.patient-row.selected { background: var(--teal-light); padding-left: 8px; }
+.p-avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: var(--teal-light); display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--teal-dark);
+}
+.p-name { font-size: 14px; font-weight: 500; color: var(--gray-6); }
+.p-meta { font-size: 12px; color: var(--gray-4); margin-top: 2px; }
+.p-badge {
+  margin-left: auto; font-size: 11px; padding: 3px 10px;
+  border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+}
+.p-badge.ok { background: var(--teal-light); color: var(--teal-dark); }
+.p-badge.warn { background: var(--amber-light); color: var(--amber); }
+.p-badge.alert { background: var(--red-light); color: var(--red); }
+.p-visits { font-size: 11px; color: var(--gray-4); font-family: var(--mono); white-space: nowrap; }
+
+/* ── Search ── */
+.search-bar {
+  display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap;
+}
+.search-input {
+  flex: 1; min-width: 200px; padding: 9px 14px; font-size: 13px;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--gray-0); color: var(--gray-6);
+  font-family: var(--font);
+}
+.search-input:focus { outline: none; border-color: var(--teal); }
+.filter-select {
+  padding: 9px 12px; font-size: 13px;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--gray-0); color: var(--gray-5);
+  font-family: var(--font); cursor: pointer;
+}
+
+/* ── Detail panel ── */
+.detail-header {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 1.25rem;
+}
+.detail-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--teal-light); display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700; color: var(--teal-dark); flex-shrink: 0;
+}
+.detail-name { font-size: 20px; font-weight: 700; color: var(--gray-6); }
+.detail-meta { font-size: 13px; color: var(--gray-4); margin-top: 3px; }
+.detail-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.chip {
+  font-size: 11px; padding: 3px 9px; border-radius: 20px;
+  background: var(--bg); color: var(--gray-4); border: 1px solid var(--border);
+}
+.chip.sym { background: var(--teal-light); color: var(--teal-dark); border-color: var(--teal-light); }
+
+/* ── Metrics mini ── */
+.mini-metrics { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin: 1rem 0; }
+.mini-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: .75rem .5rem; text-align: center;
+}
+.mini-val { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--gray-6); }
+.mini-name { font-size: 10px; color: var(--gray-4); margin-top: 3px; }
+.mini-card.good .mini-val { color: var(--teal-dark); }
+.mini-card.warn .mini-val { color: var(--amber); }
+.mini-card.bad .mini-val { color: var(--red); }
+
+/* ── History table ── */
+.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hist-table th {
+  text-align: left; padding: 8px 10px;
+  font-size: 10px; font-weight: 500; color: var(--gray-4);
+  text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+}
+.hist-table td { padding: 10px 10px; border-bottom: 1px solid var(--bg); color: var(--gray-5); vertical-align: middle; }
+.hist-table td:first-child { color: var(--gray-6); font-weight: 500; font-family: var(--mono); }
+.flag-chip { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+.flag-chip.ok { background: var(--teal-light); color: var(--teal-dark); }
+.flag-chip.warn { background: var(--amber-light); color: var(--amber); }
+.flag-chip.alert { background: var(--red-light); color: var(--red); }
+
+/* ── Chart ── */
+.chart-wrap { position: relative; width: 100%; height: 200px; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 16px; font-size: 13px; font-weight: 500;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--gray-5);
+  cursor: pointer; font-family: var(--font); transition: all .15s;
+}
+.btn:hover { background: var(--bg); }
+.btn.primary { background: var(--teal); color: #fff; border-color: var(--teal); }
+.btn.primary:hover { background: var(--teal-dark); }
+.btn.danger { border-color: var(--red); color: var(--red); }
+.btn.danger:hover { background: var(--red-light); }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Empty ── */
+.empty { text-align: center; padding: 3rem 1rem; color: var(--gray-3); font-size: 14px; line-height: 1.8; }
+.empty svg { width: 40px; height: 40px; margin: 0 auto 1rem; display: block; opacity: .3; }
+
+/* ── Analytics page ── */
+.analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.bar-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--bg); }
+.bar-row:last-child { border-bottom: none; }
+.bar-lbl { font-size: 12px; color: var(--gray-5); width: 80px; flex-shrink: 0; }
+.bar-bg { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 8px; border-radius: 4px; background: var(--teal); }
+.bar-v { font-size: 12px; font-family: var(--mono); color: var(--gray-4); width: 30px; text-align: right; }
+
+/* ── Export section ── */
+.export-area { padding: 1.5rem; background: var(--bg); border-radius: var(--r); margin-top: 1rem; }
+.export-area h4 { font-size: 13px; font-weight: 600; margin-bottom: .75rem; }
+.export-desc { font-size: 12px; color: var(--gray-4); margin-bottom: 1rem; line-height: 1.6; }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--teal-dark); color: #fff;
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  opacity: 0; transition: opacity .3s; z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--gray-2); border-radius: 3px; }
+
+@media (max-width: 900px) {
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .mini-metrics { grid-template-columns: repeat(3,1fr); }
+  .analytics-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar">
+  <div class="logo-area">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" fill="#fff"/>
+        <path d="M7 12a5 5 0 0 0 10 0" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="12" y1="17" x2="12" y2="21" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="logo-title">환자 데이터베이스</div>
+    <div class="logo-sub">경희토정한의원<br>목소리 클리닉</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">메뉴</div>
+    <button class="nav-btn active" onclick="showPage('overview')" id="nav-overview">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+      전체 현황
+    </button>
+    <button class="nav-btn" onclick="showPage('patients')" id="nav-patients">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+      환자 목록
+    </button>
+    <button class="nav-btn" onclick="showPage('analytics')" id="nav-analytics">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 12 5 8l3 3 3-5 3-2"/></svg>
+      통계 분석
+    </button>
+    <button class="nav-btn" onclick="showPage('export')" id="nav-export">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v8M5 7l3 3 3-3M2 12v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1"/></svg>
+      데이터 내보내기
+    </button>
+  </div>
+
+  <div class="nav-group" style="border-bottom:none">
+    <div class="nav-label">바로가기</div>
+    <a href="voicecheck_v2.html" class="voicecheck-link" target="_blank">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="4"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg>
+      보이스체크 열기 ↗
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    VoiceCheck DB v1.0<br>
+    IndexedDB 로컬 저장<br>
+    © 경희토정한의원
+  </div>
+</nav>
+
+<!-- ── Main ── -->
+<main class="main">
+
+  <!-- ══ 전체 현황 ══ -->
+  <div id="page-overview" class="page active">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <h2>전체 현황</h2>
+        <p>목소리 클리닉 누적 진단 데이터 요약</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="loadData()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 6.5a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0z"/><path d="M6.5 4v2.5l1.5 1.5"/></svg>
+          새로고침
+        </button>
+        <button class="btn primary" onclick="loadDemoData()">데모 데이터 불러오기</button>
+      </div>
+    </div>
+
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card accent">
+        <div class="stat-label">총 환자 수</div>
+        <div class="stat-val" id="statPatients">—</div>
+        <div class="stat-sub">등록된 환자</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">총 측정 횟수</div>
+        <div class="stat-val" id="statMeasures">—</div>
+        <div class="stat-sub">누적 음성 측정</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">이번 달 신규</div>
+        <div class="stat-val" id="statThisMonth">—</div>
+        <div class="stat-sub">신규 환자</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">평균 HNR</div>
+        <div class="stat-val" id="statAvgHNR">—</div>
+        <div class="stat-sub">전체 평균 (dB)</div>
+      </div>
+    </div>
+
+    <div class="card-grid2" style="display:grid;gap:1rem;margin-bottom:1rem">
+      <div class="card">
+        <div class="card-title">최근 측정 환자</div>
+        <div id="recentList">
+          <div class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-8 8-8s8 4 8 8"/></svg>
+            데이터가 없습니다
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">변증 플래그 분포</div>
+        <div class="chart-wrap">
+          <canvas id="flagChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">주요 증상 빈도</div>
+      <div id="symFreq">
+        <div class="empty" style="padding:1.5rem">증상 데이터가 없습니다</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 환자 목록 ══ -->
+  <div id="page-patients" class="page">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <h2>환자 목록</h2>
+        <p>등록된 모든 환자와 측정 이력을 조회합니다</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:320px 1fr;gap:1rem;align-items:start">
+      <!-- 환자 리스트 -->
+      <div>
+        <div class="search-bar">
+          <input type="text" class="search-input" id="searchInput" placeholder="환자명 검색..." oninput="filterPatients()">
+          <select class="filter-select" id="filterFlag" onchange="filterPatients()">
+            <option value="">전체</option>
+            <option value="정상">정상</option>
+            <option value="의심">주의</option>
+            <option value="가능성">참고</option>
+          </select>
+        </div>
+        <div class="card" style="padding:.75rem">
+          <div class="patient-list" id="patientList">
+            <div class="empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-8 8-8s8 4 8 8"/></svg>
+              환자 데이터가 없습니다
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 환자 상세 -->
+      <div id="patientDetail">
+        <div class="card">
+          <div class="empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+            환자를 선택하면<br>상세 정보가 표시됩니다
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 통계 분석 ══ -->
+  <div id="page-analytics" class="page">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <h2>통계 분석</h2>
+        <p>전체 환자 음성 데이터 집계 분석</p>
+      </div>
+    </div>
+
+    <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card">
+        <div class="stat-label">평균 초진 Jitter</div>
+        <div class="stat-val" id="aJitter">—</div>
+        <div class="stat-sub">정상 기준 &lt;1.04%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">평균 초진 HNR</div>
+        <div class="stat-val" id="aHNR">—</div>
+        <div class="stat-sub">정상 기준 &gt;20 dB</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">평균 초진 MPT</div>
+        <div class="stat-val" id="aMPT">—</div>
+        <div class="stat-sub">정상 기준 &gt;15초</div>
+      </div>
+    </div>
+
+    <div class="analytics-grid">
+      <div class="card">
+        <div class="card-title">HNR 변화 추이 (전체 평균)</div>
+        <div class="chart-wrap"><canvas id="avgTrendChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">직업군별 환자 분포</div>
+        <div class="chart-wrap"><canvas id="jobChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">음성 사용 강도별 평균 HNR</div>
+      <div id="levelBars">
+        <div class="empty" style="padding:1rem">데이터가 없습니다</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 내보내기 ══ -->
+  <div id="page-export" class="page">
+    <div class="page-hdr">
+      <div class="page-hdr-left">
+        <h2>데이터 내보내기</h2>
+        <p>임상 연구 및 논문 작성을 위한 데이터 추출</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">전체 환자 데이터 — CSV</div>
+      <div class="export-area">
+        <h4>환자 기본 정보 + 모든 측정값</h4>
+        <div class="export-desc">
+          환자명, 생년월일, 성별, 직업, 초진일, 내원 횟수,<br>
+          F0, Jitter, Shimmer, HNR, MPT, 증상, NRS 지장도, 변증 플래그 포함
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="exportAllCSV()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 2v7M4 6.5l2.5 2.5 2.5-2.5M2 10.5v1a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-1"/></svg>
+            전체 CSV 다운로드
+          </button>
+          <button class="btn" onclick="exportPatientsCSV()">환자 기본정보만</button>
+          <button class="btn" onclick="exportMeasuresCSV()">측정 데이터만</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">논문용 요약 통계 — CSV</div>
+      <div class="export-area">
+        <h4>임상연구 기본 기술통계량</h4>
+        <div class="export-desc">
+          환자 수, 성별 분포, 평균/SD: F0·Jitter·Shimmer·HNR·MPT,<br>
+          변증 유형 분포, 증상별 빈도 포함 (논문 Table 1 형식)
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="exportSummaryCSV()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 2v7M4 6.5l2.5 2.5 2.5-2.5M2 10.5v1a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-1"/></svg>
+            요약 통계 CSV 다운로드
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">데이터 관리</div>
+      <div class="btn-row">
+        <button class="btn" onclick="exportJSON()">JSON 백업</button>
+        <button class="btn danger" onclick="clearAllData()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h9M4.5 3V2h4v1M5.5 5.5v4M7.5 5.5v4M3 3l.8 7.2a1 1 0 0 0 1 .8h4.4a1 1 0 0 0 1-.8L11 3"/></svg>
+          전체 데이터 삭제
+        </button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── IndexedDB ─────────────────────────────────────
+const DB_NAME = 'VoiceClinicDB';
+const DB_VER = 1;
+let db = null;
+let allPatients = [], allMeasurements = [];
+let flagChart = null, avgTrendChart = null, jobChart = null;
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('patients')) {
+        const ps = d.createObjectStore('patients', { keyPath: 'id', autoIncrement: true });
+        ps.createIndex('name', 'name', { unique: false });
+        ps.createIndex('registeredAt', 'registeredAt', { unique: false });
+      }
+      if (!d.objectStoreNames.contains('measurements')) {
+        const ms = d.createObjectStore('measurements', { keyPath: 'id', autoIncrement: true });
+        ms.createIndex('patientId', 'patientId', { unique: false });
+        ms.createIndex('date', 'date', { unique: false });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbGetAll(store) {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(store,'readonly').objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbPut(store, data) {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(store,'readwrite').objectStore(store).add(data);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbClear(store) {
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(store,'readwrite').objectStore(store).clear();
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ── Navigation ────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('nav-' + id).classList.add('active');
+  if (id === 'analytics') renderAnalytics();
+}
+
+// ── Data Load ─────────────────────────────────────
+async function loadData() {
+  if (!db) return;
+  allPatients = await dbGetAll('patients');
+  allMeasurements = await dbGetAll('measurements');
+  renderOverview();
+  renderPatientList();
+}
+
+// ── Overview ──────────────────────────────────────
+function renderOverview() {
+  // Stats
+  document.getElementById('statPatients').textContent = allPatients.length;
+  document.getElementById('statMeasures').textContent = allMeasurements.length;
+
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const newPts = allPatients.filter(p => p.registeredAt && p.registeredAt.startsWith(thisMonth)).length;
+  document.getElementById('statThisMonth').textContent = newPts;
+
+  const hnrVals = allMeasurements.filter(m => m.hnr).map(m => m.hnr);
+  const avgHNR = hnrVals.length ? (hnrVals.reduce((a,b) => a+b,0)/hnrVals.length).toFixed(1) : '—';
+  document.getElementById('statAvgHNR').textContent = avgHNR;
+
+  // Recent list
+  const recent = [...allMeasurements].sort((a,b) => b.timestamp - a.timestamp).slice(0,5);
+  const rl = document.getElementById('recentList');
+  if (!recent.length) {
+    rl.innerHTML = '<div class="empty" style="padding:1rem">데이터가 없습니다</div>'; 
+  } else {
+    rl.innerHTML = recent.map(m => {
+      const fc = getFlagClass(m.flag);
+      return `<div class="patient-row" onclick="selectPatientById(${m.patientId})">
+        <div class="p-avatar">${(m.patientName||'?')[0]}</div>
+        <div>
+          <div class="p-name">${m.patientName || '—'}</div>
+          <div class="p-meta">${m.date} · HNR ${m.hnr ? m.hnr.toFixed(1) : '—'} dB</div>
+        </div>
+        <span class="p-badge ${fc}">${m.flag || '—'}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Flag chart
+  const flagCounts = {};
+  allMeasurements.forEach(m => {
+    const f = m.flag || '미분류';
+    flagCounts[f] = (flagCounts[f]||0) + 1;
+  });
+  const canvas = document.getElementById('flagChart');
+  if (flagChart) flagChart.destroy();
+  if (Object.keys(flagCounts).length) {
+    flagChart = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(flagCounts),
+        datasets: [{ data: Object.values(flagCounts),
+          backgroundColor: ['#1D9E75','#BA7517','#E24B4A','#5DCAA5','#C8C6BE'],
+          borderWidth: 0 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 11, family: 'Noto Sans KR' }, boxWidth: 12 } } } }
+    });
+  }
+
+  // Symptom freq
+  const symCount = {};
+  allMeasurements.forEach(m => {
+    (m.symptoms||[]).forEach(s => { symCount[s] = (symCount[s]||0)+1; });
+  });
+  const sorted = Object.entries(symCount).sort((a,b) => b[1]-a[1]).slice(0,8);
+  const maxV = sorted[0]?.[1] || 1;
+  const sf = document.getElementById('symFreq');
+  if (!sorted.length) {
+    sf.innerHTML = '<div class="empty" style="padding:1rem">증상 데이터가 없습니다</div>';
+  } else {
+    sf.innerHTML = sorted.map(([s,v]) => `
+      <div class="bar-row">
+        <div class="bar-lbl">${s}</div>
+        <div class="bar-bg"><div class="bar-fill" style="width:${(v/maxV*100).toFixed(0)}%"></div></div>
+        <div class="bar-v">${v}</div>
+      </div>`).join('');
+  }
+}
+
+function getFlagClass(flag) {
+  if (!flag) return '';
+  if (flag.includes('정상')) return 'ok';
+  if (flag.includes('의심')) return 'alert';
+  return 'warn';
+}
+
+// ── Patient List ──────────────────────────────────
+let filteredPatients = [];
+function renderPatientList(pts) {
+  filteredPatients = pts || allPatients;
+  const el = document.getElementById('patientList');
+  if (!filteredPatients.length) {
+    el.innerHTML = '<div class="empty" style="padding:1rem">환자가 없습니다</div>'; return;
+  }
+  el.innerHTML = filteredPatients.map(p => {
+    const pMeasures = allMeasurements.filter(m => m.patientId === p.id);
+    const lastM = pMeasures.sort((a,b) => b.timestamp - a.timestamp)[0];
+    const fc = lastM ? getFlagClass(lastM.flag) : '';
+    const flagText = lastM?.flag || '미측정';
+    return `<div class="patient-row" id="pr-${p.id}" onclick="selectPatient(${p.id})">
+      <div class="p-avatar">${p.name[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div class="p-name">${p.name}</div>
+        <div class="p-meta">${p.job || '직업 미기재'} · 초진 ${p.firstVisit||p.registeredAt||'—'}</div>
+      </div>
+      <span class="p-visits">${pMeasures.length}회</span>
+      <span class="p-badge ${fc}" style="margin-left:8px">${flagText}</span>
+    </div>`;
+  }).join('');
+}
+
+function filterPatients() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const f = document.getElementById('filterFlag').value;
+  let pts = allPatients.filter(p => p.name.toLowerCase().includes(q));
+  if (f) {
+    pts = pts.filter(p => {
+      const pMs = allMeasurements.filter(m => m.patientId === p.id);
+      const last = pMs.sort((a,b) => b.timestamp - a.timestamp)[0];
+      return last?.flag?.includes(f);
+    });
+  }
+  renderPatientList(pts);
+}
+
+function selectPatientById(id) {
+  showPage('patients');
+  setTimeout(() => selectPatient(id), 100);
+}
+
+function selectPatient(id) {
+  document.querySelectorAll('.patient-row').forEach(r => r.classList.remove('selected'));
+  const row = document.getElementById('pr-' + id);
+  if (row) row.classList.add('selected');
+  const p = allPatients.find(x => x.id === id);
+  if (!p) return;
+  const pMs = allMeasurements.filter(m => m.patientId === id).sort((a,b) => a.timestamp - b.timestamp);
+  const lastM = pMs[pMs.length-1];
+  const fc = lastM ? getFlagClass(lastM.flag) : '';
+
+  const jOk = lastM?.jitter < 1.04, hOk = lastM?.hnr > 20, sOk = lastM?.shimmer < 3.81, mOk = !lastM?.mpt || lastM?.mpt >= 15;
+
+  document.getElementById('patientDetail').innerHTML = `
+    <div class="card">
+      <div class="detail-header">
+        <div class="detail-avatar">${p.name[0]}</div>
+        <div>
+          <div class="detail-name">${p.name}</div>
+          <div class="detail-meta">${p.gender||'—'} · ${p.job||'직업 미기재'} · ${p.dob||'생년 미기재'}</div>
+          <div class="detail-chips">
+            <span class="chip">초진 ${p.firstVisit||p.registeredAt||'—'}</span>
+            <span class="chip">${p.voiceLevel||'—'}</span>
+            <span class="chip p-badge ${fc}" style="margin:0">${lastM?.flag||'미측정'}</span>
+            ${(lastM?.symptoms||[]).map(s => `<span class="chip sym">${s}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--gray-4);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">최근 측정값 (${lastM?.date||'—'})</div>
+      <div class="mini-metrics">
+        <div class="mini-card">
+          <div class="mini-val">${lastM?.f0?.toFixed(0)||'—'}</div>
+          <div class="mini-name">F0 (Hz)</div>
+        </div>
+        <div class="mini-card ${lastM ? (jOk?'good':'bad') : ''}">
+          <div class="mini-val">${lastM?.jitter?.toFixed(2)||'—'}</div>
+          <div class="mini-name">Jitter %</div>
+        </div>
+        <div class="mini-card ${lastM ? (sOk?'good':'warn') : ''}">
+          <div class="mini-val">${lastM?.shimmer?.toFixed(2)||'—'}</div>
+          <div class="mini-name">Shimmer %</div>
+        </div>
+        <div class="mini-card ${lastM ? (hOk?'good':'warn') : ''}">
+          <div class="mini-val">${lastM?.hnr?.toFixed(1)||'—'}</div>
+          <div class="mini-name">HNR dB</div>
+        </div>
+        <div class="mini-card ${lastM ? (mOk?'good':'warn') : ''}">
+          <div class="mini-val">${lastM?.mpt!==undefined?lastM.mpt+'초':'—'}</div>
+          <div class="mini-name">MPT</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--gray-4);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin:1rem 0 .5rem">내원 이력 (${pMs.length}회)</div>
+      ${pMs.length ? `<div style="overflow-x:auto"><table class="hist-table">
+        <thead><tr><th>회차</th><th>날짜</th><th>Jitter</th><th>Shimmer</th><th>HNR</th><th>MPT</th><th>NRS</th><th>변증 플래그</th></tr></thead>
+        <tbody>
+          ${pMs.map((m,i) => {
+            const fc2 = getFlagClass(m.flag);
+            return `<tr>
+              <td>${i+1}</td>
+              <td style="color:var(--gray-4);font-size:12px">${m.date}</td>
+              <td>${m.jitter?.toFixed(2)||'—'}</td>
+              <td>${m.shimmer?.toFixed(2)||'—'}</td>
+              <td>${m.hnr?.toFixed(1)||'—'}</td>
+              <td>${m.mpt!==undefined?m.mpt+'초':'—'}</td>
+              <td>${m.nrsDaily||'—'} / ${m.nrsWork||'—'}</td>
+              <td><span class="flag-chip ${fc2}">${m.flag||'—'}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>` : '<div class="empty" style="padding:1rem">측정 이력 없음</div>'}
+
+      ${pMs.length >= 2 ? `<div style="margin-top:1rem">
+        <div style="font-size:11px;color:var(--gray-4);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">HNR 경과 추이</div>
+        <div class="chart-wrap"><canvas id="ptTrend"></canvas></div>
+      </div>` : ''}
+    </div>
+  `;
+
+  if (pMs.length >= 2) {
+    setTimeout(() => {
+      new Chart(document.getElementById('ptTrend'), {
+        type: 'line',
+        data: {
+          labels: pMs.map((_,i) => (i+1)+'회'),
+          datasets: [
+            { label:'HNR', data: pMs.map(m=>m.hnr), borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,.08)', tension:.35, pointBackgroundColor:'#1D9E75', yAxisID:'y' },
+            { label:'MPT', data: pMs.map(m=>m.mpt||null), borderColor:'#BA7517', borderDash:[4,3], tension:.35, pointBackgroundColor:'#BA7517', yAxisID:'y2' }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{ display:false } },
+          scales: {
+            y:{ min:0,max:30, title:{display:true,text:'HNR',font:{size:10}}, grid:{color:'#F3F2ED'} },
+            y2:{ position:'right', min:0,max:30, title:{display:true,text:'MPT',font:{size:10}}, grid:{drawOnChartArea:false} }
+          }
+        }
+      });
+    }, 50);
+  }
+}
+
+// ── Analytics ─────────────────────────────────────
+function renderAnalytics() {
+  // 초진 데이터만 (각 환자의 첫 번째 측정)
+  const firstMeasures = allPatients.map(p => {
+    const ms = allMeasurements.filter(m => m.patientId === p.id).sort((a,b) => a.timestamp - b.timestamp);
+    return ms[0];
+  }).filter(Boolean);
+
+  const avg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+
+  const jVals = firstMeasures.filter(m=>m.jitter).map(m=>m.jitter);
+  const hVals = firstMeasures.filter(m=>m.hnr).map(m=>m.hnr);
+  const mVals = firstMeasures.filter(m=>m.mpt).map(m=>m.mpt);
+
+  document.getElementById('aJitter').textContent = avg(jVals)?.toFixed(2)+'%' || '—';
+  document.getElementById('aHNR').textContent = avg(hVals)?.toFixed(1)+' dB' || '—';
+  document.getElementById('aMPT').textContent = avg(mVals)?.toFixed(1)+'초' || '—';
+
+  // Avg HNR trend (by date)
+  const byDate = {};
+  allMeasurements.forEach(m => {
+    if (!m.hnr) return;
+    if (!byDate[m.date]) byDate[m.date] = [];
+    byDate[m.date].push(m.hnr);
+  });
+  const dates = Object.keys(byDate).sort();
+  const avgHNRs = dates.map(d => avg(byDate[d]));
+
+  const atCanvas = document.getElementById('avgTrendChart');
+  if (avgTrendChart) avgTrendChart.destroy();
+  avgTrendChart = new Chart(atCanvas, {
+    type: 'line',
+    data: {
+      labels: dates.map(d => d.slice(5)),
+      datasets: [{ label:'평균 HNR', data: avgHNRs, borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,.08)', tension:.35, pointBackgroundColor:'#1D9E75', fill:true }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ min:0,max:30, grid:{color:'#F3F2ED'} } } }
+  });
+
+  // Job chart
+  const jobCount = {};
+  allPatients.forEach(p => { const j=p.job||'미기재'; jobCount[j]=(jobCount[j]||0)+1; });
+  const jCanvas = document.getElementById('jobChart');
+  if (jobChart) jobChart.destroy();
+  if (Object.keys(jobCount).length) {
+    jobChart = new Chart(jCanvas, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(jobCount),
+        datasets: [{ data: Object.values(jobCount), backgroundColor: 'rgba(29,158,117,.7)', borderRadius:6 }]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{grid:{color:'#F3F2ED'}, ticks:{stepSize:1}} } }
+    });
+  }
+
+  // Level bars
+  const levelAvg = {};
+  allMeasurements.forEach(m => {
+    const lv = m.voiceLevel || '미기재';
+    if (!levelAvg[lv]) levelAvg[lv] = [];
+    if (m.hnr) levelAvg[lv].push(m.hnr);
+  });
+  const lb = document.getElementById('levelBars');
+  const entries = Object.entries(levelAvg);
+  if (!entries.length) { lb.innerHTML = '<div class="empty" style="padding:1rem">데이터가 없습니다</div>'; return; }
+  const maxAvg = Math.max(...entries.map(([,v]) => avg(v)||0));
+  lb.innerHTML = entries.map(([lv, vals]) => {
+    const a = avg(vals);
+    return `<div class="bar-row">
+      <div class="bar-lbl" style="width:140px">${lv}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${((a/30)*100).toFixed(0)}%;background:${a>20?'#1D9E75':a>15?'#BA7517':'#E24B4A'}"></div></div>
+      <div class="bar-v" style="width:70px">${a?.toFixed(1)||'—'} dB</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Export ────────────────────────────────────────
+function csvDownload(filename, rows) {
+  const bom = '\uFEFF';
+  const csv = bom + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = filename; a.click();
+}
+
+function exportAllCSV() {
+  const rows = [['환자ID','환자명','성별','생년월일','직업','음성강도','초진일','측정일','F0','Jitter','Shimmer','HNR','MPT','NRS일상','NRS직업','증상','변증플래그']];
+  allMeasurements.forEach(m => {
+    const p = allPatients.find(x=>x.id===m.patientId)||{};
+    rows.push([m.patientId,m.patientName||p.name||'',p.gender||'',p.dob||'',p.job||'',m.voiceLevel||'',p.firstVisit||'',m.date,m.f0?.toFixed(1)||'',m.jitter?.toFixed(3)||'',m.shimmer?.toFixed(3)||'',m.hnr?.toFixed(2)||'',m.mpt||'',m.nrsDaily||'',m.nrsWork||'',(m.symptoms||[]).join('|'),m.flag||'']);
+  });
+  csvDownload(`voiceclinic_전체_${new Date().toISOString().slice(0,10)}.csv`, rows);
+  toast('전체 CSV 다운로드 완료');
+}
+
+function exportPatientsCSV() {
+  const rows = [['환자ID','환자명','성별','생년월일','직업','음성강도','초진일','총내원']];
+  allPatients.forEach(p => {
+    const cnt = allMeasurements.filter(m=>m.patientId===p.id).length;
+    rows.push([p.id,p.name,p.gender||'',p.dob||'',p.job||'',p.voiceLevel||'',p.firstVisit||p.registeredAt||'',cnt]);
+  });
+  csvDownload(`voiceclinic_환자목록_${new Date().toISOString().slice(0,10)}.csv`, rows);
+  toast('환자 기본정보 CSV 다운로드 완료');
+}
+
+function exportMeasuresCSV() {
+  const rows = [['측정ID','환자ID','환자명','측정일','F0','Jitter','Shimmer','HNR','MPT','NRS일상','NRS직업','변증플래그']];
+  allMeasurements.forEach(m => {
+    rows.push([m.id,m.patientId,m.patientName||'',m.date,m.f0?.toFixed(1)||'',m.jitter?.toFixed(3)||'',m.shimmer?.toFixed(3)||'',m.hnr?.toFixed(2)||'',m.mpt||'',m.nrsDaily||'',m.nrsWork||'',m.flag||'']);
+  });
+  csvDownload(`voiceclinic_측정데이터_${new Date().toISOString().slice(0,10)}.csv`, rows);
+  toast('측정 데이터 CSV 다운로드 완료');
+}
+
+function exportSummaryCSV() {
+  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+  const sd = arr => { const m=avg(arr); return arr.length>1 ? Math.sqrt(arr.reduce((a,b)=>a+(b-m)**2,0)/(arr.length-1)) : 0; };
+  const ms = allMeasurements;
+  const rows = [
+    ['항목','값'],
+    ['총 환자 수', allPatients.length],
+    ['총 측정 횟수', ms.length],
+    ['남성', allPatients.filter(p=>p.gender==='남').length],
+    ['여성', allPatients.filter(p=>p.gender==='여').length],
+    ['F0 평균 (Hz)', avg(ms.filter(m=>m.f0).map(m=>m.f0))?.toFixed(2)||''],
+    ['F0 SD', sd(ms.filter(m=>m.f0).map(m=>m.f0))?.toFixed(2)||''],
+    ['Jitter 평균 (%)', avg(ms.filter(m=>m.jitter).map(m=>m.jitter))?.toFixed(3)||''],
+    ['Jitter SD', sd(ms.filter(m=>m.jitter).map(m=>m.jitter))?.toFixed(3)||''],
+    ['Shimmer 평균 (%)', avg(ms.filter(m=>m.shimmer).map(m=>m.shimmer))?.toFixed(3)||''],
+    ['Shimmer SD', sd(ms.filter(m=>m.shimmer).map(m=>m.shimmer))?.toFixed(3)||''],
+    ['HNR 평균 (dB)', avg(ms.filter(m=>m.hnr).map(m=>m.hnr))?.toFixed(2)||''],
+    ['HNR SD', sd(ms.filter(m=>m.hnr).map(m=>m.hnr))?.toFixed(2)||''],
+    ['MPT 평균 (초)', avg(ms.filter(m=>m.mpt).map(m=>m.mpt))?.toFixed(2)||''],
+    ['MPT SD', sd(ms.filter(m=>m.mpt).map(m=>m.mpt))?.toFixed(2)||''],
+  ];
+  // 변증 분포
+  const flagCount = {};
+  ms.forEach(m => { const f=m.flag||'미분류'; flagCount[f]=(flagCount[f]||0)+1; });
+  Object.entries(flagCount).forEach(([k,v]) => rows.push([`변증_${k}`, v]));
+  csvDownload(`voiceclinic_요약통계_${new Date().toISOString().slice(0,10)}.csv`, rows);
+  toast('요약 통계 CSV 다운로드 완료');
+}
+
+function exportJSON() {
+  const data = JSON.stringify({ patients: allPatients, measurements: allMeasurements }, null, 2);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([data], {type:'application/json'}));
+  a.download = `voiceclinic_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  toast('JSON 백업 다운로드 완료');
+}
+
+async function clearAllData() {
+  if (!confirm('⚠️ 모든 환자 데이터와 측정 기록을 영구 삭제합니다.\n삭제 전 JSON 백업을 권장합니다.\n\n계속하시겠습니까?')) return;
+  await dbClear('patients'); await dbClear('measurements');
+  allPatients = []; allMeasurements = [];
+  renderOverview(); renderPatientList();
+  toast('모든 데이터가 삭제되었습니다');
+}
+
+// ── Demo Data ─────────────────────────────────────
+async function loadDemoData() {
+  const demos = [
+    { p:{ name:'김지원', dob:'1985-03-12', gender:'여', job:'초등학교 교사', voiceLevel:'고강도', symptoms:['음성피로','목쉼 (애성)'], nrsDaily:'6', nrsWork:'8', registeredAt:'2026-03-01', firstVisit:'2026-03-01' },
+      ms:[{ date:'2026-03-01',timestamp:1740787200000,f0:185.2,jitter:2.34,shimmer:4.8,hnr:12.3,mpt:9,flag:'기체혈어 의심',nrsDaily:'6',nrsWork:'8',symptoms:['음성피로','목쉼 (애성)'],voiceLevel:'고강도' },
+          { date:'2026-03-08',timestamp:1741392000000,f0:182.1,jitter:1.98,shimmer:4.1,hnr:14.8,mpt:11,flag:'발성 불규칙',nrsDaily:'5',nrsWork:'7',symptoms:['음성피로'],voiceLevel:'고강도' },
+          { date:'2026-03-15',timestamp:1741996800000,f0:178.5,jitter:1.51,shimmer:3.5,hnr:17.2,mpt:13,flag:'폐기허/음허 가능성',nrsDaily:'4',nrsWork:'5',symptoms:['음성피로'],voiceLevel:'고강도' },
+          { date:'2026-03-22',timestamp:1742601600000,f0:176.3,jitter:1.12,shimmer:3.1,hnr:19.5,mpt:15,flag:'정상',nrsDaily:'2',nrsWork:'3',symptoms:[],voiceLevel:'고강도' }]},
+    { p:{ name:'박민준', dob:'1990-07-24', gender:'남', job:'성악가', voiceLevel:'고강도', symptoms:['고음 발성 장애','인후 건조감'], nrsDaily:'5', nrsWork:'9', registeredAt:'2026-03-05', firstVisit:'2026-03-05' },
+      ms:[{ date:'2026-03-05',timestamp:1741132800000,f0:155.0,jitter:1.88,shimmer:5.2,hnr:13.5,mpt:10,flag:'기체혈어 의심',nrsDaily:'5',nrsWork:'9',symptoms:['고음 발성 장애','인후 건조감'],voiceLevel:'고강도' },
+          { date:'2026-03-19',timestamp:1742342400000,f0:158.2,jitter:1.44,shimmer:4.0,hnr:16.8,mpt:13,flag:'폐기허/음허 가능성',nrsDaily:'3',nrsWork:'6',symptoms:['인후 건조감'],voiceLevel:'고강도' }]},
+    { p:{ name:'이수연', dob:'1978-11-30', gender:'여', job:'대학 강사', voiceLevel:'고강도', symptoms:['인후 이물감','만성 기침·헛기침'], nrsDaily:'4', nrsWork:'7', registeredAt:'2026-04-01', firstVisit:'2026-04-01' },
+      ms:[{ date:'2026-04-01',timestamp:1743436800000,f0:220.4,jitter:1.65,shimmer:3.9,hnr:15.2,mpt:12,flag:'폐기허/음허 가능성',nrsDaily:'4',nrsWork:'7',symptoms:['인후 이물감','만성 기침·헛기침'],voiceLevel:'고강도' },
+          { date:'2026-04-10',timestamp:1744214400000,f0:218.0,jitter:1.30,shimmer:3.4,hnr:17.8,mpt:14,flag:'폐기허/음허 가능성',nrsDaily:'3',nrsWork:'5',symptoms:['인후 이물감'],voiceLevel:'고강도' }]},
+  ];
+  for (const demo of demos) {
+    const pid = await dbPut('patients', demo.p);
+    for (const m of demo.ms) await dbPut('measurements', { ...m, patientId: pid, patientName: demo.p.name });
+  }
+  await loadData();
+  toast('데모 데이터 3명 불러오기 완료');
+}
+
+// ── Toast ─────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 3000);
+}
+
+// ── Init ──────────────────────────────────────────
+initDB().then(() => loadData()).catch(e => console.error('DB 오류:', e));
+</script>
+</body>
+</html>
