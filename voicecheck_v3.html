@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보이스체크 VoiceCheck — 경희토정한의원 목소리 클리닉</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --teal: #1D9E75;
+  --teal-light: #E1F5EE;
+  --teal-dark: #0F6E56;
+  --teal-mid: #5DCAA5;
+  --amber: #BA7517;
+  --amber-light: #FAEEDA;
+  --red: #E24B4A;
+  --red-light: #FCEBEB;
+  --gray-0: #FAFAF8;
+  --gray-1: #F3F2ED;
+  --gray-2: #E5E3DC;
+  --gray-3: #C8C6BE;
+  --gray-4: #888780;
+  --gray-5: #444441;
+  --gray-6: #1A1A18;
+  --font-main: 'Noto Sans KR', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--font-main);
+  background: var(--gray-1);
+  color: var(--gray-6);
+  min-height: 100vh;
+}
+
+/* ─── Layout ─── */
+.shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--gray-6);
+  padding: 1.5rem 0;
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; height: 100vh;
+  z-index: 100;
+}
+.sidebar-logo {
+  padding: 0 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 1rem;
+}
+.sidebar-logo .mark {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--teal);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: .6rem;
+}
+.sidebar-logo .mark svg { width: 20px; height: 20px; }
+.sidebar-logo h1 { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.02em; }
+.sidebar-logo p { font-size: 10px; color: var(--gray-3); margin-top: 2px; line-height: 1.4; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: .65rem 1.25rem;
+  font-size: 13px; font-weight: 400;
+  color: var(--gray-3);
+  cursor: pointer; border: none; background: none;
+  width: 100%; text-align: left;
+  transition: color .15s, background .15s;
+  border-left: 2px solid transparent;
+}
+.nav-item:hover { color: #fff; background: rgba(255,255,255,0.04); }
+.nav-item.active { color: var(--teal-mid); border-left-color: var(--teal-mid); background: rgba(93,202,165,0.06); font-weight: 500; }
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .7; }
+.nav-item.active svg { opacity: 1; }
+.nav-section {
+  font-size: 10px; letter-spacing: .08em; color: var(--gray-4);
+  padding: 1rem 1.25rem .4rem; text-transform: uppercase;
+}
+.sidebar-footer {
+  margin-top: auto; padding: 1rem 1.25rem;
+  font-size: 10px; color: var(--gray-4); line-height: 1.6;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.main { margin-left: 220px; padding: 2rem; min-height: 100vh; }
+.page { display: none; }
+.page.active { display: block; }
+.page-header { margin-bottom: 1.75rem; }
+.page-header h2 { font-size: 22px; font-weight: 700; color: var(--gray-6); letter-spacing: -.03em; }
+.page-header p { font-size: 13px; color: var(--gray-4); margin-top: 4px; }
+
+/* ─── Cards ─── */
+.card {
+  background: #fff;
+  border: 1px solid var(--gray-2);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--gray-4); margin-bottom: 1rem;
+}
+.card-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.card-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+
+/* ─── Fields ─── */
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; color: var(--gray-4); font-weight: 500; }
+.field input, .field select, .field textarea {
+  padding: 8px 11px; font-size: 13px;
+  border: 1px solid var(--gray-2); border-radius: var(--radius-sm);
+  background: var(--gray-0); color: var(--gray-6);
+  font-family: var(--font-main);
+  transition: border .15s;
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--teal); }
+
+/* ─── Symptom buttons ─── */
+.sym-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sym-btn {
+  padding: 9px 10px; font-size: 12px;
+  border: 1px solid var(--gray-2); border-radius: var(--radius-sm);
+  background: var(--gray-0); color: var(--gray-4);
+  cursor: pointer; text-align: left; font-family: var(--font-main);
+  transition: all .15s;
+}
+.sym-btn:hover { border-color: var(--teal-mid); color: var(--teal-dark); }
+.sym-btn.on { background: var(--teal-light); border-color: var(--teal); color: var(--teal-dark); font-weight: 500; }
+
+/* ─── NRS ─── */
+.nrs-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.nrs-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--gray-2); background: var(--gray-0);
+  font-size: 12px; cursor: pointer; color: var(--gray-4);
+  font-family: var(--font-main); transition: all .15s;
+}
+.nrs-btn:hover { border-color: var(--teal); color: var(--teal-dark); }
+.nrs-btn.sel { background: var(--teal); color: #fff; border-color: var(--teal); font-weight: 500; }
+
+/* ─── Buttons ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; font-size: 13px; font-weight: 500;
+  border: 1px solid var(--gray-2); border-radius: var(--radius-sm);
+  background: #fff; color: var(--gray-5);
+  cursor: pointer; font-family: var(--font-main);
+  transition: all .15s;
+}
+.btn:hover { background: var(--gray-1); }
+.btn.primary { background: var(--teal); color: #fff; border-color: var(--teal); }
+.btn.primary:hover { background: var(--teal-dark); }
+.btn-row { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+
+/* ─── Recording button ─── */
+.rec-area { text-align: center; padding: 1.5rem 0; }
+.rec-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 36px; font-size: 16px; font-weight: 500;
+  border: none; border-radius: 40px; cursor: pointer;
+  font-family: var(--font-main); transition: all .2s;
+}
+.rec-btn.idle { background: var(--teal); color: #fff; }
+.rec-btn.idle:hover { background: var(--teal-dark); transform: scale(1.03); }
+.rec-btn.recording { background: var(--red); color: #fff; animation: pulse 1.2s infinite; }
+.rec-btn.done { background: var(--gray-1); color: var(--gray-5); border: 1px solid var(--gray-2); }
+@keyframes pulse { 0%,100%{opacity:1; box-shadow:0 0 0 0 rgba(226,75,74,0.3);} 50%{opacity:.85; box-shadow:0 0 0 8px rgba(226,75,74,0);} }
+
+/* ─── Task list ─── */
+.task-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid var(--gray-1);
+}
+.task-row:last-child { border-bottom: none; }
+.task-num {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: var(--gray-1); font-size: 12px; font-weight: 500;
+  display: flex; align-items: center; justify-content: center; color: var(--gray-4);
+}
+.task-num.active { background: var(--teal); color: #fff; }
+.task-num.done { background: var(--teal-light); color: var(--teal-dark); }
+.task-info strong { font-size: 13px; font-weight: 500; color: var(--gray-6); display: block; }
+.task-info span { font-size: 12px; color: var(--gray-4); }
+.task-badge {
+  margin-left: auto; font-size: 11px; padding: 3px 8px;
+  border-radius: 20px; white-space: nowrap;
+}
+.task-badge.done { background: var(--teal-light); color: var(--teal-dark); }
+.task-badge.active { background: var(--amber-light); color: var(--amber); }
+.task-badge.wait { background: var(--gray-1); color: var(--gray-4); }
+
+/* ─── Waveform canvas ─── */
+canvas.wave {
+  width: 100%; height: 72px; border-radius: var(--radius-sm);
+  background: var(--gray-0); display: block; border: 1px solid var(--gray-2);
+}
+.rec-timer { font-family: var(--font-mono); font-size: 22px; color: var(--gray-5); margin: .5rem 0 1rem; }
+
+/* ─── Metrics grid ─── */
+.metrics-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 1rem 0; }
+.metric-card {
+  background: var(--gray-0); border: 1px solid var(--gray-2);
+  border-radius: var(--radius-sm); padding: 1rem .75rem; text-align: center;
+}
+.metric-val { font-family: var(--font-mono); font-size: 22px; font-weight: 500; color: var(--gray-6); }
+.metric-name { font-size: 11px; color: var(--gray-4); margin-top: 4px; }
+.metric-sub { font-size: 10px; color: var(--gray-3); margin-top: 2px; font-family: var(--font-mono); }
+.metric-card.good .metric-val { color: var(--teal-dark); }
+.metric-card.warn .metric-val { color: var(--amber); }
+.metric-card.bad .metric-val { color: var(--red); }
+
+/* ─── Flag boxes ─── */
+.flag { border-radius: var(--radius-sm); padding: 1rem 1.1rem; margin-bottom: .75rem; border-left: 3px solid; }
+.flag.ok { background: var(--teal-light); border-color: var(--teal); }
+.flag.warn { background: var(--amber-light); border-color: var(--amber); }
+.flag.alert { background: var(--red-light); border-color: var(--red); }
+.flag-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.flag.ok .flag-title { color: var(--teal-dark); }
+.flag.warn .flag-title { color: var(--amber); }
+.flag.alert .flag-title { color: var(--red); }
+.flag-desc { font-size: 12px; color: var(--gray-5); line-height: 1.6; }
+.tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+.tag {
+  font-size: 11px; padding: 3px 9px; border-radius: 20px;
+  font-family: var(--font-mono);
+}
+.tag.green { background: var(--teal-light); color: var(--teal-dark); }
+.tag.amber { background: var(--amber-light); color: var(--amber); }
+.tag.red { background: var(--red-light); color: var(--red); }
+
+/* ─── Range bars ─── */
+.range-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--gray-1); }
+.range-row:last-child { border-bottom: none; }
+.range-label { font-size: 12px; color: var(--gray-4); width: 72px; flex-shrink: 0; }
+.range-bar-bg { flex: 1; height: 6px; background: var(--gray-1); border-radius: 3px; overflow: hidden; }
+.range-bar { height: 6px; border-radius: 3px; background: var(--teal); transition: width .5s ease; }
+.range-val { font-size: 12px; font-family: var(--font-mono); width: 52px; text-align: right; color: var(--gray-5); }
+
+/* ─── History table ─── */
+.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hist-table th { text-align: left; padding: 8px; font-size: 11px; font-weight: 500; color: var(--gray-4); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--gray-2); }
+.hist-table td { padding: 10px 8px; border-bottom: 1px solid var(--gray-1); color: var(--gray-5); vertical-align: middle; }
+.hist-table td:first-child { color: var(--gray-6); font-weight: 500; }
+.change-up { color: var(--teal-dark); font-weight: 500; }
+.change-dn { color: var(--red); }
+
+/* ─── Prompt box ─── */
+.prompt-box {
+  font-size: 32px; font-weight: 700; color: var(--gray-3);
+  text-align: center; padding: 1.5rem 0; letter-spacing: -.02em;
+  line-height: 1.4; white-space: pre-line;
+}
+
+/* ─── Spec canvas ─── */
+canvas.spec { width: 100%; height: 100px; border-radius: var(--radius-sm); display: block; background: #0d1117; }
+
+/* ─── Empty state ─── */
+.empty { text-align: center; padding: 2.5rem 1rem; color: var(--gray-3); font-size: 13px; }
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-2); border-radius: 3px; }
+
+@media (max-width: 860px) {
+  .metrics-grid { grid-template-columns: repeat(3,1fr); }
+  .sym-grid { grid-template-columns: repeat(2,1fr); }
+  .card-grid3 { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ─── Sidebar ─── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="mark">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" fill="#fff"/>
+        <path d="M7 12a5 5 0 0 0 10 0" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="12" y1="17" x2="12" y2="21" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h1>보이스체크</h1>
+    <p>경희토정한의원<br>목소리 클리닉</p>
+  </div>
+
+  <div class="nav-section">진료</div>
+  <button class="nav-item active" onclick="showPage('patient')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+    환자 등록
+  </button>
+  <button class="nav-item" onclick="showPage('measure')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="4"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><path d="M8 2v1M8 13v1M2 8H3M13 8h1"/></svg>
+    음성 측정
+  </button>
+  <button class="nav-item" onclick="showPage('result')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 10l2-3 2 2 2-4"/></svg>
+    분석 결과
+  </button>
+
+  <div class="nav-section">관리</div>
+  <button class="nav-item" onclick="showPage('history')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+    경과 추적
+  </button>
+  <a href="dashboard.html" target="_blank" style="text-decoration:none">
+    <div class="nav-item" style="color:var(--teal-mid)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+      환자 DB 대시보드 ↗
+    </div>
+  </a>
+
+  <div class="sidebar-footer">
+    VoiceCheck v0.1<br>
+    데이터는 이 기기에만 저장됩니다<br>
+    © 경희토정한의원
+  </div>
+</nav>
+
+<!-- ─── Main ─── -->
+<main class="main">
+
+  <!-- ══ 환자 등록 ══ -->
+  <div id="page-patient" class="page active">
+    <div class="page-header">
+      <h2>환자 등록</h2>
+      <p>기본 정보와 증상을 입력하고 음성 측정을 시작합니다</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">기본 정보</div>
+      <div class="card-grid3">
+        <div class="field"><label>환자명</label><input type="text" id="pName" placeholder="홍길동"></div>
+        <div class="field"><label>생년월일</label><input type="date" id="pDob"></div>
+        <div class="field"><label>성별</label>
+          <select id="pGender"><option value="">선택</option><option>남</option><option>여</option></select>
+        </div>
+        <div class="field"><label>직업</label><input type="text" id="pJob" placeholder="교사, 성악가, 강사 등"></div>
+        <div class="field"><label>초진일</label><input type="date" id="pDate"></div>
+        <div class="field"><label>음성 사용 강도</label>
+          <select id="pVoiceLevel">
+            <option>고강도 (가수·강사·성직자)</option>
+            <option>중강도 (일반 직장인)</option>
+            <option>저강도</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">주요 증상 (해당 항목 모두 선택)</div>
+      <div class="sym-grid" id="symGrid">
+        <button class="sym-btn" onclick="toggleSym(this)">목쉼 (애성)</button>
+        <button class="sym-btn" onclick="toggleSym(this)">음성피로</button>
+        <button class="sym-btn" onclick="toggleSym(this)">인후 이물감</button>
+        <button class="sym-btn" onclick="toggleSym(this)">만성 기침·헛기침</button>
+        <button class="sym-btn" onclick="toggleSym(this)">발성 시 통증</button>
+        <button class="sym-btn" onclick="toggleSym(this)">고음 발성 장애</button>
+        <button class="sym-btn" onclick="toggleSym(this)">음성 갈라짐</button>
+        <button class="sym-btn" onclick="toggleSym(this)">인후 건조감</button>
+        <button class="sym-btn" onclick="toggleSym(this)">음성 진전 (떨림)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">변증 문진 (해당 항목 모두 선택)</div>
+      <div style="font-size:11px;color:var(--gray-4);margin-bottom:10px">현재 증상에 해당하는 항목을 모두 선택해 주세요</div>
+      <div class="sym-grid" id="jingGrid">
+        <button class="sym-btn" onclick="toggleJing(this)" data-key="dryThroat">인후 건조감·갈증</button>
+        <button class="sym-btn" onclick="toggleJing(this)" data-key="fatigue">쉽게 피로·기력 저하</button>
+        <button class="sym-btn" onclick="toggleJing(this)" data-key="phlegm">목에 가래가 자주 낌</button>
+        <button class="sym-btn" onclick="toggleJing(this)" data-key="stress">스트레스·감정 기복 심함</button>
+        <button class="sym-btn" onclick="toggleJing(this)" data-key="globus">목에 뭔가 걸린 느낌 (매핵기)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">NRS 지장도 (0–10)</div>
+      <div style="margin-bottom:1rem">
+        <div style="font-size:12px;color:var(--gray-4);margin-bottom:4px">일상 지장도</div>
+        <div class="nrs-row" id="nrs1"></div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--gray-4);margin-bottom:4px">직업적 부담도</div>
+        <div class="nrs-row" id="nrs2"></div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="justify-content:flex-end">
+      <button class="btn primary" onclick="showPage('measure')">음성 측정 시작 →</button>
+    </div>
+  </div>
+
+  <!-- ══ 음성 측정 ══ -->
+  <div id="page-measure" class="page">
+    <div class="page-header">
+      <h2>음성 측정</h2>
+      <p>3가지 Task를 순서대로 완료해 주세요. 마이크 접근 권한이 필요합니다.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">측정 프로토콜</div>
+      <div id="taskList">
+        <div class="task-row">
+          <div class="task-num active" id="tn1">1</div>
+          <div class="task-info"><strong>모음 연장 발성</strong><span>"아~" 를 편안하게 3–5초 지속</span></div>
+          <span class="task-badge active" id="tb1">진행 중</span>
+        </div>
+        <div class="task-row">
+          <div class="task-num" id="tn2">2</div>
+          <div class="task-info"><strong>최대 발성 지속 (MPT)</strong><span>"아~" 를 최대한 길게 — 자동 측정</span></div>
+          <span class="task-badge wait" id="tb2">대기</span>
+        </div>
+        <div class="task-row">
+          <div class="task-num" id="tn3">3</div>
+          <div class="task-info"><strong>표준 문장 읽기</strong><span>"저는 오늘 목소리 상태를 확인합니다"</span></div>
+          <span class="task-badge wait" id="tb3">대기</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" id="taskLabel">Task 1 — 모음 연장 발성</div>
+      <div class="prompt-box" id="taskPrompt">아~</div>
+      <canvas class="wave" id="waveCanvas"></canvas>
+      <div style="text-align:center">
+        <div class="rec-timer" id="recTimer">00:00</div>
+        <div class="rec-area">
+          <button class="rec-btn idle" id="recBtn" onclick="toggleRec()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="7" r="5"/></svg>
+            녹음 시작
+          </button>
+        </div>
+      </div>
+      <div class="btn-row" style="justify-content:center">
+        <button class="btn" onclick="prevTask()" id="prevBtn" style="display:none">← 이전</button>
+        <button class="btn" onclick="nextTask()" id="nextBtn" style="display:none">다음 Task →</button>
+        <button class="btn primary" onclick="goResult()" id="analyzeBtn" style="display:none">분석 결과 보기 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 분석 결과 ══ -->
+  <div id="page-result" class="page">
+    <div class="page-header">
+      <h2>분석 결과</h2>
+      <p>음성 파라미터 측정값 및 한의학 변증 참고 플래그</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">음성 파라미터</div>
+      <div class="metrics-grid" id="metricsGrid">
+        <div class="metric-card"><div class="metric-val" id="mF0">—</div><div class="metric-name">기본 주파수</div><div class="metric-sub">F0 (Hz)</div></div>
+        <div class="metric-card"><div class="metric-val" id="mJitter">—</div><div class="metric-name">지터</div><div class="metric-sub">Jitter (%)</div></div>
+        <div class="metric-card"><div class="metric-val" id="mShimmer">—</div><div class="metric-name">쉬머</div><div class="metric-sub">Shimmer (%)</div></div>
+        <div class="metric-card"><div class="metric-val" id="mHNR">—</div><div class="metric-name">HNR</div><div class="metric-sub">배음/잡음비 (dB)</div></div>
+        <div class="metric-card"><div class="metric-val" id="mMPT">—</div><div class="metric-name">MPT</div><div class="metric-sub">최대발성 (초)</div></div>
+      </div>
+      <div style="margin-top:1rem">
+        <div style="font-size:12px;color:var(--gray-4);margin-bottom:6px">실시간 파형</div>
+        <canvas class="wave" id="resultWave"></canvas>
+      </div>
+      <div style="margin-top:1rem">
+        <div style="font-size:12px;color:var(--gray-4);margin-bottom:6px">스펙트로그램 (주파수 분포)</div>
+        <canvas class="spec" id="specCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">한의학 변증 참고 플래그</div>
+      <div id="flagArea">
+        <div class="flag ok">
+          <div class="flag-title">음성 측정 완료 후 결과가 표시됩니다</div>
+          <div class="flag-desc">음성 측정 탭에서 3가지 Task를 완료해 주세요.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">정상 범위 대비</div>
+      <div class="range-row"><div class="range-label">F0 안정성</div><div class="range-bar-bg"><div class="range-bar" id="rb1" style="width:0%"></div></div><div class="range-val" id="rv1">—</div></div>
+      <div class="range-row"><div class="range-label">Jitter</div><div class="range-bar-bg"><div class="range-bar" id="rb2" style="width:0%"></div></div><div class="range-val" id="rv2">—</div></div>
+      <div class="range-row"><div class="range-label">Shimmer</div><div class="range-bar-bg"><div class="range-bar" id="rb3" style="width:0%"></div></div><div class="range-val" id="rv3">—</div></div>
+      <div class="range-row"><div class="range-label">HNR</div><div class="range-bar-bg"><div class="range-bar" id="rb4" style="width:0%"></div></div><div class="range-val" id="rv4">—</div></div>
+      <div class="range-row" style="border:none"><div class="range-label">MPT</div><div class="range-bar-bg"><div class="range-bar" id="rb5" style="width:0%"></div></div><div class="range-val" id="rv5">—</div></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="printResult()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="4" width="10" height="7" rx="1"/><path d="M4 4V2h6v2"/><path d="M4 9h6"/><path d="M4 11h4"/></svg>
+        결과 출력
+      </button>
+      <button class="btn" onclick="showPage('history')">경과 저장 후 추적 →</button>
+    </div>
+  </div>
+
+  <!-- ══ 경과 추적 ══ -->
+  <div id="page-history" class="page">
+    <div class="page-header">
+      <h2>경과 추적</h2>
+      <p>회차별 측정값 변화를 그래프로 확인합니다</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">치료 경과 — HNR · MPT 추이</div>
+      <div style="position:relative;width:100%;height:220px">
+        <canvas id="trendChart" role="img" aria-label="치료 회차별 HNR 및 MPT 변화 추이">회차별 음성 개선도 추이 그래프</canvas>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--gray-4)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:3px;background:var(--teal);border-radius:2px;display:inline-block"></span>HNR (dB)</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:3px;background:var(--amber);border-radius:2px;display:inline-block;border-bottom:2px dashed var(--amber)"></span>MPT (초)</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">회차별 기록</div>
+      <table class="hist-table">
+        <thead>
+          <tr>
+            <th>회차</th><th>날짜</th><th>F0 (Hz)</th>
+            <th>Jitter (%)</th><th>HNR (dB)</th><th>MPT (초)</th><th>변화</th>
+          </tr>
+        </thead>
+        <tbody id="histBody">
+          <tr><td colspan="7"><div class="empty">측정 기록이 없습니다.<br>음성 측정을 완료하면 자동 저장됩니다.</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="loadDemo()">데모 데이터 불러오기</button>
+      <button class="btn" onclick="clearHistory()">기록 초기화</button>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+// ─── IndexedDB Setup ─────────────────────────────
+const DB_NAME = 'VoiceClinicDB';
+const DB_VER = 1;
+let db = null;
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      // 환자 store
+      if (!d.objectStoreNames.contains('patients')) {
+        const ps = d.createObjectStore('patients', { keyPath: 'id', autoIncrement: true });
+        ps.createIndex('name', 'name', { unique: false });
+        ps.createIndex('registeredAt', 'registeredAt', { unique: false });
+      }
+      // 측정 store
+      if (!d.objectStoreNames.contains('measurements')) {
+        const ms = d.createObjectStore('measurements', { keyPath: 'id', autoIncrement: true });
+        ms.createIndex('patientId', 'patientId', { unique: false });
+        ms.createIndex('date', 'date', { unique: false });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbPut(storeName, data) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const req = tx.objectStore(storeName).add(data);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbGetAll(storeName) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function dbGetByIndex(storeName, indexName, value) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const req = tx.objectStore(storeName).index(indexName).getAll(value);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ─── State ───────────────────────────────────────
+let audioCtx, analyser, mediaStream, recInterval, waveAnim;
+let currentTask = 1, taskDone = [false, false, false];
+let isRecording = false, recStart = 0, mptSec = 0;
+let measured = null;
+let currentPatientId = null;
+let historyData = [];
+let trendChart = null;
+
+const taskCfg = [
+  { label: 'Task 1 — 모음 연장 발성', prompt: '아~', hint: '편안하게 3–5초 지속' },
+  { label: 'Task 2 — 최대 발성 지속 (MPT)', prompt: '아~', hint: '최대한 길게 지속' },
+  { label: 'Task 3 — 표준 문장 읽기', prompt: '저는 오늘\n목소리 상태를\n확인합니다', hint: '자연스럽게 읽어주세요' }
+];
+
+// ─── Navigation ──────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const idx = ['patient','measure','result','history'].indexOf(id);
+  document.querySelectorAll('.nav-item')[idx].classList.add('active');
+  if (id === 'history') renderTrend();
+}
+
+// ─── Init NRS ────────────────────────────────────
+['nrs1','nrs2'].forEach(id => {
+  const el = document.getElementById(id);
+  for (let i = 0; i <= 10; i++) {
+    const b = document.createElement('button');
+    b.className = 'nrs-btn'; b.textContent = i;
+    b.onclick = () => {
+      el.querySelectorAll('.nrs-btn').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+    el.appendChild(b);
+  }
+});
+document.getElementById('pDate').valueAsDate = new Date();
+
+// ─── DB Init & patient history load ──────────────
+initDB().then(() => {
+  loadPatientHistory();
+}).catch(e => console.error('DB 초기화 실패:', e));
+
+// ─── Symptom toggle ──────────────────────────────
+function toggleSym(b) { b.classList.toggle('on'); }
+
+// ─── Recording ───────────────────────────────────
+async function toggleRec() {
+  if (isRecording) { stopRec(); return; }
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    audioCtx.createMediaStreamSource(mediaStream).connect(analyser);
+    isRecording = true; recStart = Date.now(); mptSec = 0;
+    const btn = document.getElementById('recBtn');
+    btn.className = 'rec-btn recording';
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><rect width="12" height="12" rx="2"/></svg> 녹음 중지';
+    drawWave();
+    recInterval = setInterval(() => {
+      const s = Math.floor((Date.now() - recStart) / 1000);
+      const m = Math.floor(s / 60), sec = s % 60;
+      document.getElementById('recTimer').textContent =
+        (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
+      if (currentTask === 2) mptSec = s;
+    }, 200);
+  } catch(e) {
+    alert('마이크 접근 권한이 필요합니다.\n브라우저 주소창의 자물쇠 아이콘 → 마이크 허용으로 설정해 주세요.');
+  }
+}
+
+function stopRec() {
+  isRecording = false;
+  if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+  clearInterval(recInterval);
+  cancelAnimationFrame(waveAnim);
+  const btn = document.getElementById('recBtn');
+  btn.className = 'rec-btn done'; btn.innerHTML = '✓ 녹음 완료';
+  taskDone[currentTask - 1] = true;
+  document.getElementById('tn' + currentTask).className = 'task-num done';
+  document.getElementById('tn' + currentTask).textContent = '✓';
+  document.getElementById('tb' + currentTask).className = 'task-badge done';
+  document.getElementById('tb' + currentTask).textContent = '완료' + (currentTask === 2 ? ' (' + mptSec + '초)' : '');
+  document.getElementById('nextBtn').style.display = currentTask < 3 ? 'inline-flex' : 'none';
+  document.getElementById('analyzeBtn').style.display = currentTask === 3 ? 'inline-flex' : 'none';
+  simulateAnalysis();
+}
+
+function drawWave() {
+  const canvas = document.getElementById('waveCanvas');
+  canvas.width = canvas.offsetWidth * 2; canvas.height = 144;
+  const ctx = canvas.getContext('2d');
+  function frame() {
+    waveAnim = requestAnimationFrame(frame);
+    if (!analyser) return;
+    const buf = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteTimeDomainData(buf);
+    ctx.fillStyle = 'rgba(250,250,248,0.4)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 2; ctx.beginPath();
+    buf.forEach((v, i) => {
+      const x = i * (canvas.width / buf.length);
+      const y = (v / 128) * canvas.height / 2;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+  frame();
+}
+
+// ─── Simulated analysis ──────────────────────────
+function simulateAnalysis() {
+  if (!measured) measured = {};
+  if (currentTask === 1) {
+    measured.f0 = parseFloat((120 + Math.random() * 100).toFixed(1));
+    measured.jitter = parseFloat((0.3 + Math.random() * 2.5).toFixed(2));
+    measured.shimmer = parseFloat((1.5 + Math.random() * 5.5).toFixed(2));
+    measured.hnr = parseFloat((8 + Math.random() * 18).toFixed(1));
+  }
+  if (currentTask === 2) measured.mpt = mptSec || Math.floor(8 + Math.random() * 12);
+}
+
+// ─── Task nav ────────────────────────────────────
+function nextTask() {
+  if (currentTask >= 3) return;
+  currentTask++;
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('prevBtn').style.display = 'inline-flex';
+  updateTaskUI();
+}
+function prevTask() {
+  if (currentTask <= 1) return;
+  currentTask--;
+  document.getElementById('prevBtn').style.display = currentTask > 1 ? 'inline-flex' : 'none';
+  document.getElementById('nextBtn').style.display = taskDone[currentTask - 1] ? 'inline-flex' : 'none';
+  document.getElementById('analyzeBtn').style.display = 'none';
+  updateTaskUI();
+}
+function updateTaskUI() {
+  const cfg = taskCfg[currentTask - 1];
+  document.getElementById('taskLabel').textContent = cfg.label;
+  document.getElementById('taskPrompt').textContent = cfg.prompt;
+  const btn = document.getElementById('recBtn');
+  btn.className = 'rec-btn idle';
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="7" r="5"/></svg> 녹음 시작';
+  document.getElementById('recTimer').textContent = '00:00';
+  isRecording = false;
+  for (let i = 1; i <= 3; i++) {
+    const tn = document.getElementById('tn' + i);
+    const tb = document.getElementById('tb' + i);
+    if (taskDone[i-1]) {
+      tn.className = 'task-num done'; tn.textContent = '✓';
+      tb.className = 'task-badge done';
+    } else if (i === currentTask) {
+      tn.className = 'task-num active'; tn.textContent = i;
+      tb.className = 'task-badge active'; tb.textContent = '진행 중';
+    } else {
+      tn.className = 'task-num'; tn.textContent = i;
+      tb.className = 'task-badge wait'; tb.textContent = '대기';
+    }
+  }
+}
+
+// ─── Result rendering ─────────────────────────────
+async function goResult() {
+  if (!measured) measured = { f0: 180, jitter: 1.5, shimmer: 3.8, hnr: 16.5, mpt: 12 };
+  showPage('result');
+  renderResult();
+  await autoSaveToDB();
+}
+
+function renderResult() {
+  const d = measured;
+  const jOk = d.jitter < 1.04, sOk = d.shimmer < 3.81, hOk = d.hnr > 20, mOk = !d.mpt || d.mpt >= 15;
+
+  const cells = document.querySelectorAll('#metricsGrid .metric-card');
+  cells[0].className = 'metric-card'; cells[0].querySelector('.metric-val').textContent = d.f0 ? d.f0.toFixed(1) : '—';
+  cells[1].className = 'metric-card ' + (jOk ? 'good' : 'bad'); cells[1].querySelector('.metric-val').textContent = d.jitter.toFixed(2) + '%';
+  cells[2].className = 'metric-card ' + (sOk ? 'good' : 'warn'); cells[2].querySelector('.metric-val').textContent = d.shimmer.toFixed(2) + '%';
+  cells[3].className = 'metric-card ' + (hOk ? 'good' : 'warn'); cells[3].querySelector('.metric-val').textContent = d.hnr.toFixed(1) + ' dB';
+  cells[4].className = 'metric-card ' + (mOk ? 'good' : 'warn'); cells[4].querySelector('.metric-val').textContent = d.mpt !== undefined ? d.mpt + '초' : '—';
+
+  document.getElementById('mF0').textContent = d.f0 ? d.f0.toFixed(1) : '—';
+  document.getElementById('mJitter').textContent = d.jitter.toFixed(2) + '%';
+  document.getElementById('mShimmer').textContent = d.shimmer.toFixed(2) + '%';
+  document.getElementById('mHNR').textContent = d.hnr.toFixed(1) + ' dB';
+  document.getElementById('mMPT').textContent = d.mpt !== undefined ? d.mpt + '초' : '—';
+
+  // ── 변증 알고리즘 (A+B 통합) ──────────────────
+  document.getElementById('flagArea').innerHTML = bienjeung(d);
+
+  // Range bars
+  const jPct = Math.min(100, (d.jitter / 3) * 100);
+  const sPct = Math.min(100, (d.shimmer / 8) * 100);
+  const hPct = Math.min(100, (d.hnr / 30) * 100);
+  const mPct = d.mpt !== undefined ? Math.min(100, (d.mpt / 25) * 100) : 50;
+  setBar('rb1', 'rv1', Math.max(5, 100 - jPct), jOk ? '#1D9E75' : '#E24B4A', d.f0 ? d.f0.toFixed(0) + ' Hz' : '—');
+  setBar('rb2', 'rv2', jPct, jOk ? '#1D9E75' : '#E24B4A', d.jitter.toFixed(2) + '%');
+  setBar('rb3', 'rv3', sPct, sOk ? '#1D9E75' : '#BA7517', d.shimmer.toFixed(2) + '%');
+  setBar('rb4', 'rv4', hPct, hOk ? '#1D9E75' : '#BA7517', d.hnr.toFixed(1) + ' dB');
+  setBar('rb5', 'rv5', mPct, mOk ? '#1D9E75' : '#BA7517', d.mpt !== undefined ? d.mpt + '초' : '—');
+
+  drawResultWave(); drawSpec();
+}
+
+function toggleJing(btn) { btn.classList.toggle('on'); }
+
+function getJing() {
+  const result = {};
+  document.querySelectorAll('#jingGrid .sym-btn').forEach(b => {
+    result[b.dataset.key] = b.classList.contains('on');
+  });
+  return result;
+}
+
+// ── 통합 변증 알고리즘 (A+B) ─────────────────────
+function bienjeung(d) {
+  const jOk = d.jitter < 1.04;
+  const sOk = d.shimmer < 3.81;
+  const hOk = d.hnr > 20;
+  const mOk = !d.mpt || d.mpt >= 15;
+
+  // 문진 항목
+  const jing = getJing();
+  const dryThroat = jing.dryThroat;   // 인후 건조감·갈증
+  const fatigue   = jing.fatigue;     // 쉽게 피로·기력 저하
+  const phlegm    = jing.phlegm;      // 가래
+  const stress    = jing.stress;      // 스트레스·감정 기복
+  const globus    = jing.globus;      // 매핵기
+
+  // 환자 정보
+  const gender   = document.getElementById('pGender').value;
+  const dobVal   = document.getElementById('pDob').value;
+  const age      = dobVal ? Math.floor((Date.now() - new Date(dobVal)) / 31557600000) : null;
+  const vLevel   = document.getElementById('pVoiceLevel').value || '';
+  const highVoice = vLevel.includes('고강도');
+  const symptoms = Array.from(document.querySelectorAll('#symGrid .sym-btn.on')).map(b => b.textContent);
+  const hasHoarseness = symptoms.some(s => s.includes('목쉼') || s.includes('애성'));
+  const hasVoiceFatigue = symptoms.some(s => s.includes('음성피로'));
+  const hasPain   = symptoms.some(s => s.includes('통증'));
+  const hasCough  = symptoms.some(s => s.includes('기침') || s.includes('헛기침'));
+  const hasHighFail = symptoms.some(s => s.includes('고음'));
+  const hasItokmul = symptoms.some(s => s.includes('이물감'));
+  const nrsDaily = parseInt(document.querySelector('#nrs1 .nrs-btn.sel')?.textContent || '0');
+  const nrsWork  = parseInt(document.querySelector('#nrs2 .nrs-btn.sel')?.textContent || '0');
+
+  let flags = '';
+
+  // ════════════════════════════════════════════════
+  // 1. 풍한·풍열 외감 — 급성 발열 패턴 우선 감별
+  // ════════════════════════════════════════════════
+  // (증상 버튼 중 '발성 시 통증' + 다발성 급성 증상 패턴)
+  const acutePattern = hasPain && hasHoarseness && !fatigue && !dryThroat;
+  if (acutePattern) {
+    flags += flag('alert', '풍한·풍열 외감(外感) 의심',
+      `급성 발성 통증 + 목쉼 동반. 발열·오한·몸살·인후통 여부를 추가 확인하세요.<br>
+       Jitter ${d.jitter.toFixed(2)}% / HNR ${d.hnr.toFixed(1)} dB — 급성기 염증성 변화 가능성.<br>
+       <b>처치 방향:</b> 외감 해표(解表) 위주. 은교산·형방패독산 계열 검토. 충분한 수분 섭취·발성 휴식 지도.`,
+      ['red:풍한·풍열 외감', 'amber:급성기 발성 제한', 'green:해표약 고려']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 2. 기체혈어(氣滯血瘀) — 성대결절·폴립 패턴
+  // ════════════════════════════════════════════════
+  const giHyeolYeo = !jOk && !hOk;
+  const giHyeolYeoStrong = giHyeolYeo && (stress || highVoice || hasHoarseness);
+  if (giHyeolYeoStrong) {
+    const extra = [];
+    if (stress) extra.push('스트레스·감정 기복');
+    if (highVoice) extra.push('고강도 음성 사용');
+    if (hasHoarseness) extra.push('목쉼(애성) 호소');
+    flags += flag('alert', '기체혈어(氣滯血瘀) — 성대 병변 가능성',
+      `Jitter ${d.jitter.toFixed(2)}% ↑ + HNR ${d.hnr.toFixed(1)} dB ↓ + ${extra.join(', ')}.<br>
+       성대결절·폴립 형성 가능성. 후두내시경 병행을 강력 권고합니다.<br>
+       <b>처치 방향:</b> 활혈화어(活血祛瘀) 위주. 도핵승기탕·혈부축어탕 계열 검토. 음성 휴식 지도.`,
+      ['red:기체혈어', 'red:성대결절·폴립 의심', 'amber:후두내시경 권고', 'amber:활혈화어']);
+  } else if (giHyeolYeo && stress) {
+    flags += flag('alert', '기체혈어(氣滯血瘀) — 기울(氣鬱) 동반',
+      `Jitter ${d.jitter.toFixed(2)}% ↑ + HNR ${d.hnr.toFixed(1)} dB ↓ + 스트레스·감정 기복 호소.<br>
+       간기울결(肝氣鬱結) → 기체혈어로의 진행 가능성. 정서적 요인 관리 병행 필요.<br>
+       <b>처치 방향:</b> 소간이기(疏肝理氣) + 활혈화어. 시호소간산·가미소요산 계열 검토.`,
+      ['red:기체혈어', 'amber:간기울결 동반', 'green:소간이기']);
+  } else if (giHyeolYeo) {
+    flags += flag('alert', '기체혈어(氣滯血瘀) 의심',
+      `Jitter ${d.jitter.toFixed(2)}% ↑ + HNR ${d.hnr.toFixed(1)} dB ↓.<br>
+       성대 혈행 순환 불량 또는 성대 병변 가능성. 추가 문진 및 시진(視診) 확인 권장.<br>
+       <b>처치 방향:</b> 활혈화어(活血祛瘀) 참고. 발성 위생 교육 강화.`,
+      ['red:기체혈어 의심', 'amber:활혈화어 고려', 'amber:발성 위생 지도']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 3. 폐신음허(肺腎陰虛) — HNR↓ + MPT↓ + 건조
+  // ════════════════════════════════════════════════
+  const paesinEumheo = !hOk && !mOk && dryThroat;
+  const paesinEumheoAging = paesinEumheo && age && age >= 40;
+  if (paesinEumheo) {
+    const ageNote = paesinEumheoAging ? ` (${age}세, 음허 경향 연령대)` : '';
+    flags += flag('warn', '폐신음허(肺腎陰虛) 가능성',
+      `HNR ${d.hnr.toFixed(1)} dB ↓ + MPT ${d.mpt}초 ↓ + 인후 건조감·갈증${ageNote}.<br>
+       폐·신(肺腎)의 음액(陰液) 부족으로 성대 자양이 부족한 상태. 오후 피로 심화 여부 추가 확인.<br>
+       <b>처치 방향:</b> 자음강화(滋陰降火). 맥문동탕·자음강화탕·육미지황탕 계열 검토.`,
+      ['amber:폐신음허', 'amber:자음강화', 'green:맥문동탕·육미지황 고려']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 4. 폐기허(肺氣虛) — MPT↓ + 피로 + HNR 중등도↓
+  // ════════════════════════════════════════════════
+  const paegiHeo = !mOk && fatigue && !hOk && !dryThroat;
+  const paegiHeoOnly = !mOk && fatigue && hOk; // HNR 정상이어도 MPT↓+피로
+  if (paegiHeo) {
+    flags += flag('warn', '폐기허(肺氣虛) — 폐기 부족 패턴',
+      `MPT ${d.mpt}초 ↓ + HNR ${d.hnr.toFixed(1)} dB ↓ + 쉽게 피로·기력 저하 호소.<br>
+       폐기(肺氣)가 충분하지 않아 성대 접촉력과 지속 발성 능력이 저하된 상태.<br>
+       <b>처치 방향:</b> 보폐익기(補肺益氣). 보중익기탕·생맥산·보폐탕 계열 검토.`,
+      ['amber:폐기허', 'green:보중익기탕 고려', 'green:생맥산 고려']);
+  } else if (paegiHeoOnly) {
+    flags += flag('warn', '폐기허(肺氣虛) — 음성 지구력 저하',
+      `MPT ${d.mpt}초 ↓ + 쉽게 피로·기력 저하 호소 (HNR은 정상 범위).<br>
+       초기 폐기허 또는 음성과로 패턴. 충분한 휴식과 기허 보충 필요.<br>
+       <b>처치 방향:</b> 보기(補氣) 위주. 생맥산·황기 단방 활용 검토.`,
+      ['amber:폐기허 경증', 'green:생맥산·황기 고려', 'amber:음성 과로 관리']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 5. 담습(痰濕) — 가래 + 이물감 + Shimmer↑
+  // ════════════════════════════════════════════════
+  const damSeup = phlegm && (hasItokmul || globus || !sOk);
+  if (damSeup) {
+    const shimNote = !sOk ? ` + Shimmer ${d.shimmer.toFixed(2)}% ↑` : '';
+    flags += flag('warn', '담습(痰濕) — 성대 점막 과습 패턴',
+      `가래 자주 낌 + ${hasItokmul ? '인후 이물감' : ''}${globus ? ' 매핵기' : ''}${shimNote}.<br>
+       담습(痰濕)이 인후·성대에 울체되어 점막 점도 증가. 목 이물감·헛기침 반복 패턴.<br>
+       <b>처치 방향:</b> 화담이습(化痰利濕). 이진탕·반하후박탕 계열 검토. 자극 음식·냉음료 제한 지도.`,
+      ['amber:담습', 'green:이진탕·반하후박탕 고려', 'amber:식이 관리']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 6. 매핵기(梅核氣) / 간기울결 — 독립 소견
+  // ════════════════════════════════════════════════
+  const maekHakgi = globus && stress && !phlegm;
+  if (maekHakgi) {
+    flags += flag('warn', '매핵기(梅核氣) — 간기울결 패턴',
+      `목에 뭔가 걸린 느낌(매핵기) + 스트레스·감정 기복 동반.<br>
+       기기울결(氣機鬱結)로 인한 인후부 기체(氣滯). 삼킴 시 증감 여부, 감정 상태 추가 확인.<br>
+       <b>처치 방향:</b> 소간이기(疏肝理氣) + 화담. 반하후박탕·사역산 계열 검토.`,
+      ['amber:매핵기', 'amber:간기울결', 'green:반하후박탕 고려']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 7. 음허화왕(陰虛火旺) — 건조 + 스트레스 + Jitter
+  // ════════════════════════════════════════════════
+  const eumHeoHwaWang = dryThroat && stress && !jOk;
+  if (eumHeoHwaWang && !giHyeolYeo) {
+    flags += flag('warn', '음허화왕(陰虛火旺) 참고',
+      `인후 건조감·갈증 + 스트레스·감정 기복 + Jitter ${d.jitter.toFixed(2)}% ↑.<br>
+       음허(陰虛)로 허화(虛火)가 상염(上炎)하여 성대 자윤 부족 + 발성 불규칙 패턴.<br>
+       <b>처치 방향:</b> 자음강화(滋陰降火) + 소간. 지백지황탕·가미소요산 합방 검토.`,
+      ['amber:음허화왕', 'green:지백지황탕 고려', 'amber:소간이기 병행']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 8. Jitter 단독↑ — 음성 과사용 / 초기 병변
+  // ════════════════════════════════════════════════
+  if (!jOk && hOk && !giHyeolYeo && !eumHeoHwaWang) {
+    const causeNote = highVoice ? '고강도 음성 사용자로 음성 과로 가능성 높음.' : '초기 성대 병변 또는 발성 습관 문제 가능성.';
+    flags += flag('warn', '발성 불규칙 소견 — 음성 과사용 또는 초기 병변',
+      `Jitter ${d.jitter.toFixed(2)}% ↑ (정상 &lt;1.04%). ${causeNote}<br>
+       <b>처치 방향:</b> 기혈 순환 개선. 발성 위생 교육 강화. 음성 휴식 지도.`,
+      ['amber:발성 불규칙', 'amber:발성 위생 지도', highVoice ? 'amber:음성 과로 관리' : 'amber:초기 병변 경과 관찰']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 9. HNR 단독↓ — 폐기허·음허 감별 필요
+  // ════════════════════════════════════════════════
+  if (!hOk && jOk && !paesinEumheo && !paegiHeo && !paegiHeoOnly) {
+    const hint = dryThroat ? '인후 건조감 동반 → 음허(陰虛) 쪽 참고.'
+                : fatigue   ? '기력 저하 동반 → 폐기허(肺氣虛) 쪽 참고.'
+                : 'MPT·문진 추가 확인 후 폐기허/음허 감별 필요.';
+    flags += flag('warn', 'HNR 저하 — 폐기허·음허 감별 필요',
+      `HNR ${d.hnr.toFixed(1)} dB ↓ (정상 &gt;20 dB). ${hint}<br>
+       <b>처치 방향:</b> 감별 후 보기(補氣) 또는 자음(滋陰) 처방 선택.`,
+      ['amber:HNR 저하', 'amber:폐기허·음허 감별', 'green:맥문동탕 계열 고려']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 10. MPT 단독↓ — 보조 플래그 (다른 변증과 중복 출력)
+  // ════════════════════════════════════════════════
+  if (!mOk && !paesinEumheo && !paegiHeo && !paegiHeoOnly) {
+    flags += flag('warn', 'MPT 단축 — 폐기 부족 보조 소견',
+      `MPT ${d.mpt}초 ↓ (정상 &gt;15초). 폐기허(肺氣虛) 또는 폐신음허(肺腎陰虛) 보조 지표.<br>
+       발성 지구력 저하. 치료 경과 추적 시 주요 호전 지표로 활용.`,
+      ['amber:MPT 단축', 'amber:폐기허 참고', 'green:생맥산 고려']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 11. NRS 고수치 — 삶의 질 참고 플래그
+  // ════════════════════════════════════════════════
+  if (nrsWork >= 7) {
+    flags += flag('warn', `직업적 부담도 고수치 (NRS ${nrsWork}/10)`,
+      '직업 수행에 심각한 음성 장애 영향. 조기 집중 치료 및 음성 위생 교육 우선.',
+      ['amber:직업 고위험군', 'amber:집중 치료 권고']);
+  }
+
+  // ════════════════════════════════════════════════
+  // 12. 전항목 정상
+  // ════════════════════════════════════════════════
+  if (!flags) {
+    flags = flag('ok', '정상 범위 — 음성 상태 양호',
+      '주요 파라미터(Jitter·Shimmer·HNR·MPT)가 모두 정상 범위 내에 있습니다.<br>예방적 관리 및 음성 위생 생활화를 지속하세요.',
+      ['green:폐기(肺氣) 충실', 'green:음성 지구력 양호', 'green:예방 관리 지속']);
+  }
+
+  return flags;
+}
+
+function flag(type, title, desc, tags) {
+  const tagsHtml = tags.map(t => {
+    const [cls, txt] = t.split(':');
+    return `<span class="tag ${cls}">${txt}</span>`;
+  }).join('');
+  return `<div class="flag ${type}"><div class="flag-title">${title}</div><div class="flag-desc">${desc}</div><div class="tags">${tagsHtml}</div></div>`;
+}
+
+function setBar(barId, valId, pct, color, val) {
+  const b = document.getElementById(barId);
+  b.style.width = pct + '%'; b.style.background = color;
+  document.getElementById(valId).textContent = val;
+}
+
+function drawResultWave() {
+  const c = document.getElementById('resultWave');
+  c.width = (c.offsetWidth || 600) * 2; c.height = 144;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#FAFAF8'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle = '#1D9E75'; ctx.lineWidth = 1.5; ctx.beginPath();
+  for (let i = 0; i < c.width; i++) {
+    const y = c.height/2 + Math.sin(i*0.055)*(18+Math.random()*6) + Math.sin(i*0.14)*9;
+    i === 0 ? ctx.moveTo(i, y) : ctx.lineTo(i, y);
+  }
+  ctx.stroke();
+}
+
+function drawSpec() {
+  const c = document.getElementById('specCanvas');
+  c.width = (c.offsetWidth || 600) * 2; c.height = 200;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,c.width,c.height);
+  for (let x = 0; x < c.width; x += 2) {
+    for (let y = 0; y < c.height; y += 2) {
+      const freq = (c.height - y) / c.height;
+      const e = Math.max(0, Math.sin(x*0.022)*0.5+0.5) * Math.exp(-freq*3.2) * (0.7+Math.random()*0.5);
+      ctx.fillStyle = `rgb(${Math.floor(e*210)},${Math.floor(e*110)},${Math.floor(e*40)})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+  ['1kHz','2kHz','4kHz'].forEach((lbl, i) => {
+    const y = c.height * [0.5, 0.35, 0.2][i];
+    ctx.strokeStyle = 'rgba(93,202,165,0.4)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(c.width, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(93,202,165,0.8)'; ctx.font = '18px DM Mono,monospace';
+    ctx.fillText(lbl, 6, y - 4);
+  });
+}
+
+// ─── Auto Save to IndexedDB ───────────────────────
+async function autoSaveToDB() {
+  if (!db || !measured) return;
+  const today = new Date();
+  const dateStr = today.toISOString().split('T')[0];
+
+  // 환자 정보 수집
+  const patientInfo = {
+    name: document.getElementById('pName').value || '익명',
+    dob: document.getElementById('pDob').value || '',
+    gender: document.getElementById('pGender').value || '',
+    job: document.getElementById('pJob').value || '',
+    voiceLevel: document.getElementById('pVoiceLevel').value || '',
+    symptoms: Array.from(document.querySelectorAll('#symGrid .sym-btn.on')).map(b => b.textContent),
+    jingData: getJing(),
+    nrsDaily: document.querySelector('#nrs1 .nrs-btn.sel')?.textContent || '',
+    nrsWork: document.querySelector('#nrs2 .nrs-btn.sel')?.textContent || '',
+    registeredAt: dateStr,
+    firstVisit: document.getElementById('pDate').value || dateStr
+  };
+
+  // 기존 환자 확인 (같은 이름+생년월일)
+  let patientId = currentPatientId;
+  if (!patientId) {
+    try {
+      patientId = await dbPut('patients', patientInfo);
+      currentPatientId = patientId;
+    } catch(e) { console.error('환자 저장 오류:', e); }
+  }
+
+  // 변증 플래그 계산
+  const jOk = measured.jitter < 1.04, hOk = measured.hnr > 20;
+  const sOk = measured.shimmer < 3.81, mOk = !measured.mpt || measured.mpt >= 15;
+  // 변증 플래그 — 정교한 알고리즘 결과에서 제목 추출
+  const flagTitles = [];
+  const jOk2 = measured.jitter < 1.04, hOk2 = measured.hnr > 20, mOk2 = !measured.mpt || measured.mpt >= 15;
+  const jing2 = getJing();
+  const syms2 = Array.from(document.querySelectorAll('#symGrid .sym-btn.on')).map(b => b.textContent);
+  const hasPain2 = syms2.some(s => s.includes('통증'));
+  const hasHoar2 = syms2.some(s => s.includes('목쉼') || s.includes('애성'));
+  if (hasPain2 && hasHoar2 && !jing2.fatigue && !jing2.dryThroat) flagTitles.push('풍한·풍열 외감');
+  if (!jOk2 && !hOk2) flagTitles.push(jing2.stress || document.getElementById('pVoiceLevel').value?.includes('고강도') ? '기체혈어(강)' : '기체혈어');
+  if (!hOk2 && !mOk2 && jing2.dryThroat) flagTitles.push('폐신음허');
+  if (!mOk2 && jing2.fatigue && !hOk2 && !jing2.dryThroat) flagTitles.push('폐기허');
+  if (!mOk2 && jing2.fatigue && hOk2) flagTitles.push('폐기허 경증');
+  if (jing2.phlegm && (syms2.some(s=>s.includes('이물감')) || jing2.globus || measured.shimmer >= 3.81)) flagTitles.push('담습');
+  if (jing2.globus && jing2.stress && !jing2.phlegm) flagTitles.push('매핵기');
+  if (jing2.dryThroat && jing2.stress && !jOk2 && jOk2 === false && hOk2) flagTitles.push('음허화왕');
+  if (!hOk2 && jOk2 && flagTitles.length === 0) flagTitles.push('폐기허·음허 감별 필요');
+  if (!jOk2 && hOk2 && flagTitles.length === 0) flagTitles.push('발성 불규칙');
+  const flag = flagTitles.length ? flagTitles.join(' + ') : '정상';
+
+  // 측정 데이터 저장
+  const measureData = {
+    patientId,
+    patientName: patientInfo.name,
+    date: dateStr,
+    timestamp: today.getTime(),
+    f0: measured.f0,
+    jitter: measured.jitter,
+    shimmer: measured.shimmer,
+    hnr: measured.hnr,
+    mpt: measured.mpt,
+    symptoms: patientInfo.symptoms,
+    jingData: patientInfo.jingData,
+    nrsDaily: patientInfo.nrsDaily,
+    nrsWork: patientInfo.nrsWork,
+    flag,
+    voiceLevel: patientInfo.voiceLevel
+  };
+
+  try {
+    await dbPut('measurements', measureData);
+    showSaveToast('✓ 진단 데이터 자동 저장 완료');
+    await loadPatientHistory();
+  } catch(e) { console.error('측정 저장 오류:', e); }
+}
+
+function showSaveToast(msg) {
+  let t = document.getElementById('saveToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'saveToast';
+    t.style.cssText = `position:fixed;bottom:24px;right:24px;background:#0F6E56;color:#fff;
+      padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;
+      z-index:9999;opacity:0;transition:opacity .3s;box-shadow:0 4px 16px rgba(0,0,0,.15)`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 3000);
+}
+
+// ─── History (환자별 경과) ───────────────────────
+async function loadPatientHistory() {
+  if (!db) return;
+  try {
+    if (currentPatientId) {
+      historyData = await dbGetByIndex('measurements', 'patientId', currentPatientId);
+    } else {
+      historyData = await dbGetAll('measurements');
+    }
+    renderHistoryTable();
+  } catch(e) { console.error(e); }
+}
+
+function renderHistoryTable() {
+  const tb = document.getElementById('histBody');
+  if (!historyData.length) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty">측정 기록이 없습니다.<br>음성 측정을 완료하면 자동 저장됩니다.</div></td></tr>';
+    return;
+  }
+  const sorted = [...historyData].sort((a,b) => a.timestamp - b.timestamp);
+  tb.innerHTML = sorted.map((r, i) => {
+    const prev = sorted[i - 1];
+    const chg = prev ? (r.hnr > prev.hnr
+      ? '<span class="change-up">▲ 호전</span>'
+      : r.hnr < prev.hnr ? '<span class="change-dn">▼ 변화</span>' : '— 동일')
+      : '<span style="color:var(--gray-4)">초진</span>';
+    return `<tr>
+      <td>${i+1}회차</td>
+      <td style="color:var(--gray-4);font-size:12px">${r.date}</td>
+      <td>${r.f0 ? r.f0.toFixed(0) : '—'}</td>
+      <td>${r.jitter ? r.jitter.toFixed(2) : '—'}</td>
+      <td>${r.hnr ? r.hnr.toFixed(1) : '—'}</td>
+      <td>${r.mpt !== undefined ? r.mpt : '—'}</td>
+      <td>${chg}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTrend() {
+  const src = historyData.length > 0
+    ? [...historyData].sort((a,b) => a.timestamp - b.timestamp)
+    : [{ id:1,hnr:12.3,mpt:9 },{ id:2,hnr:14.8,mpt:11 },{ id:3,hnr:17.2,mpt:13 },{ id:4,hnr:19.5,mpt:15 }];
+  const labels = src.map((r, i) => (i+1) + '회차');
+  const hnrData = src.map(r => r.hnr);
+  const mptData = src.map(r => r.mpt !== undefined ? r.mpt : null);
+  const canvas = document.getElementById('trendChart');
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'HNR (dB)', data: hnrData, borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,.08)', pointBackgroundColor: '#1D9E75', tension: .35, yAxisID: 'y' },
+        { label: 'MPT (초)', data: mptData, borderColor: '#BA7517', backgroundColor: 'rgba(186,117,23,.08)', pointBackgroundColor: '#BA7517', tension: .35, borderDash: [5,3], yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { title: { display: true, text: 'HNR (dB)', font:{size:11} }, min: 0, max: 30, grid: { color: '#F3F2ED' } },
+        y2: { position: 'right', title: { display: true, text: 'MPT (초)', font:{size:11} }, min: 0, max: 30, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+}
+
+async function loadDemo() {
+  if (!db) return;
+  const demoPatients = [
+    { name:'김지원', dob:'1985-03-12', gender:'여', job:'초등학교 교사', voiceLevel:'고강도', symptoms:['음성피로','목쉼 (애성)'], nrsDaily:'6', nrsWork:'8', registeredAt:'2026-03-01', firstVisit:'2026-03-01' },
+    { name:'박민준', dob:'1990-07-24', gender:'남', job:'성악가', voiceLevel:'고강도', symptoms:['고음 발성 장애','인후 건조감'], nrsDaily:'5', nrsWork:'9', registeredAt:'2026-03-05', firstVisit:'2026-03-05' },
+  ];
+  const demoMeasures = [
+    [{ date:'2026-03-01',timestamp:1740787200000,f0:185.2,jitter:2.34,shimmer:4.8,hnr:12.3,mpt:9,flag:'기체혈어 의심',nrsDaily:'6',nrsWork:'8',symptoms:['음성피로','목쉼 (애성)'],voiceLevel:'고강도' },
+     { date:'2026-03-08',timestamp:1741392000000,f0:182.1,jitter:1.98,shimmer:4.1,hnr:14.8,mpt:11,flag:'발성 불규칙',nrsDaily:'5',nrsWork:'7',symptoms:['음성피로','목쉼 (애성)'],voiceLevel:'고강도' },
+     { date:'2026-03-15',timestamp:1741996800000,f0:178.5,jitter:1.51,shimmer:3.5,hnr:17.2,mpt:13,flag:'폐기허/음허 가능성',nrsDaily:'4',nrsWork:'5',symptoms:['음성피로'],voiceLevel:'고강도' },
+     { date:'2026-03-22',timestamp:1742601600000,f0:176.3,jitter:1.12,shimmer:3.1,hnr:19.5,mpt:15,flag:'정상',nrsDaily:'2',nrsWork:'3',symptoms:[],voiceLevel:'고강도' }],
+    [{ date:'2026-03-05',timestamp:1741132800000,f0:155.0,jitter:1.88,shimmer:5.2,hnr:13.5,mpt:10,flag:'기체혈어 의심',nrsDaily:'5',nrsWork:'9',symptoms:['고음 발성 장애','인후 건조감'],voiceLevel:'고강도' },
+     { date:'2026-03-19',timestamp:1742342400000,f0:158.2,jitter:1.44,shimmer:4.0,hnr:16.8,mpt:13,flag:'폐기허/음허 가능성',nrsDaily:'3',nrsWork:'6',symptoms:['인후 건조감'],voiceLevel:'고강도' }],
+  ];
+  for (let i = 0; i < demoPatients.length; i++) {
+    const pid = await dbPut('patients', demoPatients[i]);
+    for (const m of demoMeasures[i]) {
+      await dbPut('measurements', { ...m, patientId: pid, patientName: demoPatients[i].name });
+    }
+  }
+  showSaveToast('데모 데이터 2명 저장 완료');
+  await loadPatientHistory();
+}
+
+async function clearHistory() {
+  if (!confirm('모든 측정 기록을 삭제하시겠습니까?')) return;
+  // IndexedDB 전체 초기화
+  const tx1 = db.transaction('measurements','readwrite'); tx1.objectStore('measurements').clear();
+  const tx2 = db.transaction('patients','readwrite'); tx2.objectStore('patients').clear();
+  historyData = []; currentPatientId = null;
+  renderHistoryTable(); renderTrend();
+  showSaveToast('초기화 완료');
+}
+
+function printResult() { window.print(); }
+
+// ─── Init ─────────────────────────────────────────
+// DB 초기화는 위에서 initDB().then() 처리
+</script>
+</body>
+</html>
